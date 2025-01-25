@@ -1,0 +1,12 @@
+{
+    "qwe": {
+        "wins": 772,
+        "losses": 0,
+        "ties": 255
+    },
+    "ewq": {
+        "wins": 0,
+        "losses": 331,
+        "ties": 255
+    }
+}
