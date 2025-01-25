@@ -1,6 +1,6 @@
 {
     "qwe": {
-        "wins": 772,
+        "wins": 1045,
         "losses": 0,
         "ties": 255
     },
@@ -8,5 +8,20 @@
         "wins": 0,
         "losses": 331,
         "ties": 255
+    },
+    "asd": {
+        "wins": 646,
+        "losses": 0,
+        "ties": 337
+    },
+    "trdcv": {
+        "wins": 201,
+        "losses": 0,
+        "ties": 0
+    },
+    "sgfdh": {
+        "wins": 261,
+        "losses": 0,
+        "ties": 0
     }
 }

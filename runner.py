@@ -11,6 +11,7 @@ class GameState:
     PLAYER_SELECTION = 'player_selection'
     GAME = 'game'
     GAME_OVER = 'game_over'
+    SCORES = 'scores'
 
 class Colors:
     BLACK = (0, 0, 0)
@@ -158,6 +159,18 @@ class TicTacToeGame:
             self.handle_game_click(mouse_pos)
         elif self.state == GameState.GAME_OVER:
             self.handle_game_over_click(mouse_pos)
+        elif self.state == GameState.SCORES:
+            self.handle_scores_click(mouse_pos)
+
+
+    def handle_scores_click(self, mouse_pos):
+        """Handle clicks in the scores state"""
+        back_button = pygame.Rect(self.width // 2 - 100, self.height * 3 // 4, 200, 50)
+
+        if back_button.collidepoint(mouse_pos):
+            self.state = GameState.PLAYER_SELECTION
+            self.show_leaderboard = False
+            time.sleep(0.2)
 
     def handle_menu_click(self, mouse_pos):
         """Handle clicks in the menu state"""
@@ -197,8 +210,14 @@ class TicTacToeGame:
 
         elif self.game_mode == "2P":
 
+            # Check if scores button is clicked
+            scores_button = pygame.Rect(self.width // 1.5 - 100, self.height * 3 // 4, 200, 50)
+            if scores_button.collidepoint(mouse_pos):
+                self.state = GameState.SCORES
+                time.sleep(0.2)
+
             # Check if start button is clicked
-            start_button = pygame.Rect(self.width // 2 - 100, self.height * 3 // 4, 200, 50)
+            start_button = pygame.Rect(self.width // 3 - 100, self.height * 3 // 4, 200, 50)
             if start_button.collidepoint(mouse_pos):
                 if self.input_texts["player1"] and self.input_texts["player2"]:
                     self.current_players["X"] = self.input_texts["player1"]
@@ -214,6 +233,7 @@ class TicTacToeGame:
                     self.screen.blit(msg_surface, msg_rect)
                     pygame.display.flip()  # Update the display to show the message
                     time.sleep(1)  # Show the message for 1 second
+
 
     def handle_game_click(self, mouse_pos):
         """Handle clicks during gameplay"""
@@ -298,6 +318,8 @@ class TicTacToeGame:
             self.render_game()
         elif self.state == GameState.GAME_OVER:
             self.render_game_over()
+        elif self.state == GameState.SCORES:
+            self.render_scores()
 
     def render_menu(self):
         """Render main menu"""
@@ -311,8 +333,7 @@ class TicTacToeGame:
         self.draw_button("vs AI", (self.width // 4, self.height // 2))
         self.draw_button("2 Players", (3 * self.width // 4, self.height // 2))
 
-        # Draw leaderboard
-        self.render_leaderboard(self.width // 2, 2 * self.height // 3)
+    
 
     def render_player_selection(self):
         """Render player selection screen"""
@@ -344,11 +365,11 @@ class TicTacToeGame:
 
             # Draw start button if both names are entered
             #if self.input_texts["player1"] and self.input_texts["player2"]:
-            self.draw_button("Start Game", (self.width // 2, self.height * 3 // 4))
+            self.draw_button("Start Game", (self.width // 3, self.height * 3 // 4))
 
-            # Draw leaderboard if in 2P mode
-            if self.show_leaderboard:
-                self.render_leaderboard(self.width // 2, self.height * 3 // 4 + 50)
+            # Draw scores button to see the top rankings
+            self.draw_button("Scores", (self.width // 1.5, self.height * 3 // 4))
+
 
 
     def render_game(self):
@@ -432,12 +453,10 @@ class TicTacToeGame:
         message_rect.center = (self.width / 2, 30)
         self.screen.blit(message_text, message_rect)
 
-        # Draw leaderboard
-        self.render_leaderboard(self.width // 2, self.height // 2)
-
         # Draw buttons
         self.draw_button("Play Again", (self.width // 3, self.height - 65))
         self.draw_button("Main Menu", (2 * self.width // 3, self.height - 65))
+
 
     def render_leaderboard(self, x, y):
         """Render leaderboard"""
@@ -452,28 +471,39 @@ class TicTacToeGame:
             if not isinstance(data, dict):
                 continue  # Skip invalid entries
             wins = int(data.get("wins", 0))  # Default to 0 if key is missing
-            ties = int(data.get("ties", 0))  # Default to 0 if key is missing
-            losses = int(data.get("losses", 0))  # Default to 0 if key is missing
-            score = wins * 3 + ties
-            players.append((name, score, data))
+            #ties = int(data.get("ties", 0))  # Default to 0 if key is missing
+            #losses = int(data.get("losses", 0))  # Default to 0 if key is missing
+            #score = wins
+            players.append((name, wins))
         players.sort(key=lambda x: x[1], reverse=True)
 
-        # Draw title
-        title = self.mediumFont.render("Top Players", True, Colors.WHITE)
-        title_rect = title.get_rect(center=(x, y - 40))
-        self.screen.blit(title, title_rect)
-
-        # Draw top 5 players
-        for i, (name, score, data) in enumerate(players[:5]):
-            text = f"{name}: {data['wins']}W {data['ties']}T {data['losses']}L"
-            player_text = self.mediumFont.render(text, True, Colors.WHITE)
+        # Draw top 10 players
+        for i, (name, wins) in enumerate(players[:10]):
+            ranking_text = f"{i + 1}. {name}: {wins} Wins"
+            player_text = self.mediumFont.render(ranking_text, True, Colors.WHITE)
             text_rect = player_text.get_rect(center=(x, y + i * 30))
             self.screen.blit(player_text, text_rect)
 
-    def draw_button(self, text, pos, size=(200, 50)):
+
+    def render_scores(self):
+        """Render the scores screen with the leaderboard."""
+        # Draw heading
+        heading = self.largeFont.render("Top Rankings", True, Colors.WHITE)
+        heading_rect = heading.get_rect(center=(self.screen.get_width() // 2, 100))
+        self.screen.blit(heading, heading_rect)
+
+        # Render leaderboard
+        self.show_leaderboard = True
+        self.render_leaderboard(self.width // 2, 150)
+
+        # Draw a back button
+        self.draw_button("Back", (self.width // 2, self.height * 3 // 4))
+
+
+    def draw_button(self, text, pos, size=(200, 50), border_radius=20):
         """Helper method to draw buttons"""
         button = pygame.Rect(pos[0] - size[0] // 2, pos[1], size[0], size[1])
-        pygame.draw.rect(self.screen, Colors.WHITE, button)
+        pygame.draw.rect(self.screen, Colors.WHITE, button, border_radius=border_radius)
 
         text_surface = self.mediumFont.render(text, True, Colors.BLACK)
         text_rect = text_surface.get_rect(center=button.center)
