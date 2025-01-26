@@ -122,32 +122,27 @@ class TicTacToeGame:
         if player_name not in stats:
             stats[player_name] = {"wins": 0, "losses": 0, "ties": 0}
 
-        if self.stats_updated:
-            if tied:
-                stats[player_name]["ties"] += 1
-                print("tie")
-            elif won:
-                stats[player_name]["wins"] += 1
-                print("win")
-            else:
-                stats[player_name]["losses"] += 1
-                print("loss")
-        self.stats_updated = False
+        if tied:
+            stats[player_name]["ties"] += 1
+            print("tie")
+        elif won:
+            stats[player_name]["wins"] += 1
+            print("win")
+        else:
+            stats[player_name]["losses"] += 1
+            print("loss")
+
         self.save_stats(stats)
 
-    def run(self):
-        """Main game loop"""
-        while True:
-            self.handle_events()
-            self.update()
-            self.render()
-            pygame.display.flip()
+
 
     def handle_events(self):
         """Handle game events"""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                pygame.quit()
                 sys.exit()
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 self.handle_click(mouse_pos)
@@ -330,17 +325,39 @@ class TicTacToeGame:
             self.state = GameState.MENU
             time.sleep(0.2)
 
-    def update(self):
-        """Update game state"""
-        if self.state == GameState.GAME:
-            if self.game_mode == "AI" and not self.user == ttt.player(self.board) and not ttt.terminal(self.board):
-                if self.ai_turn:
-                    time.sleep(0.5)
-                    move = ttt.minimax(self.board)
-                    self.board = ttt.result(self.board, move)
-                    self.ai_turn = False
-                else:
-                    self.ai_turn = True
+    def handle_game_result(self):
+        """Determine game result and update stats"""
+        winner = ttt.winner(self.board)
+        if winner is None:
+            message = "Game Over: Tie!"
+
+            if self.game_mode == "2P" and not self.stats_updated:
+                self.update_player_stats(self.current_players["X"], tied=True)
+                self.update_player_stats(self.current_players["O"], tied=True)
+                self.stats_updated = True
+        else:
+            if self.game_mode == "2P" and not self.stats_updated:
+                winner_name = self.current_players[winner]
+                loser_symbol = "O" if winner == "X" else "X"
+                loser_name = self.current_players[loser_symbol]
+                self.update_player_stats(winner_name, won=True)
+                self.update_player_stats(loser_name, won=False)
+                self.stats_updated = True
+            message = f"Game Over: {self.current_players[winner]} wins!"
+        return message
+    #
+    # def update(self):
+    #     """Update game state"""
+    #     if self.state == GameState.GAME:
+    #         if self.game_mode == "AI" and not self.user == ttt.player(self.board) and not ttt.terminal(self.board):
+    #             if self.ai_turn:
+    #                 time.sleep(0.2)
+    #                 move = ttt.minimax(self.board)
+    #                 self.board = ttt.result(self.board, move)
+    #                 self.ai_turn = False
+    #             else:
+    #                 time.sleep(0.2)
+    #                 self.ai_turn = True
 
     def render(self):
         """Render game screen"""
@@ -404,7 +421,7 @@ class TicTacToeGame:
     def render_player_selection(self):
         """Render player selection screen"""
         if self.game_mode == "AI":
-            title = self.largeFont.render("Choose Your Side", True, Colors.ORANGE)
+            title = self.largeFont.render("Choose Your Side", True, Colors.WHITE)
             title_rect = title.get_rect(center=(self.width // 2, 50))
             self.screen.blit(title, title_rect)
 
@@ -465,22 +482,12 @@ class TicTacToeGame:
 
         # Draw game status
         if ttt.terminal(self.board):
-            if not self.stats_updated:  # Only update stats once when entering game over state
-                # Update stats
-                winner = ttt.winner(self.board)
-                if self.game_mode == "2P":
-                    if winner is None:  # Tie
-                        self.update_player_stats(self.current_players["X"], tied=True)
-                        self.update_player_stats(self.current_players["O"], tied=True)
-                    else:
-                        self.update_player_stats(self.current_players[winner], won=True)
-                        self.update_player_stats(self.current_players["O" if winner == "X" else "X"], won=False)
-                self.stats_updated = True  # Set flag to prevent further updates
             self.state = GameState.GAME_OVER
         else:
             player = ttt.player(self.board)
+            player_name = self.current_players[ttt.player(self.board)]
             if self.game_mode == "2P":
-                status = f"Player {player}'s Turn"
+                status = f"Player {player_name}'s Turn"
             else:
                 status = "Your Turn" if player == self.user else "Computer Thinking..."
 
@@ -489,40 +496,35 @@ class TicTacToeGame:
             status_rect.center = (self.width // 2, 30)
             self.screen.blit(status_text, status_rect)
 
+        if self.state == GameState.GAME:
+            if self.game_mode == "AI" and not self.user == ttt.player(self.board) and not ttt.terminal(self.board):
+                if self.ai_turn:
+                    time.sleep(0.2)
+                    move = ttt.minimax(self.board)
+                    self.board = ttt.result(self.board, move)
+                    self.ai_turn = False
+                else:
+                    time.sleep(0.2)
+                    self.ai_turn = True
+
     def render_game_over(self):
         """Render game over screen"""
+        print("Rendering game over...")
         self.render_game()  # Show final board state
 
-        # Show winner
-        winner = ttt.winner(self.board)
-        if winner is None:
-            message = "Game Over: Tie!"
-        else:
-            if self.game_mode == "2P":
-                winner_name = self.current_players[winner]
-                message = f"Game Over: {winner_name} wins!"
-            else:
-                message = "You Win!" if winner == self.user else "Computer Wins!"
-
-        # Update stats
-        if self.game_mode == "2P":
-            if winner is None:  # Tie
-                self.update_player_stats(self.current_players["X"], tied=True)
-                self.update_player_stats(self.current_players["O"], tied=True)
-            else:
-                self.update_player_stats(self.current_players[winner], won=True)
-                self.update_player_stats(self.current_players["O" if winner == "X" else "X"], won=False)
-
-        # Draw message and buttons
+        print("Print game result message: ")
+        message = self.handle_game_result()
         message_text = self.largeFont.render(message, True, Colors.WHITE)
         message_rect = message_text.get_rect()
         message_rect.center = (self.width / 2, 30)
         self.screen.blit(message_text, message_rect)
 
+        # Draw leaderboard
+        self.render_leaderboard(self.width // 2, self.height // 2)
+
         # Draw buttons
         self.draw_button("Play Again", (self.width // 3, self.height - 65))
         self.draw_button("Main Menu", (2 * self.width // 3, self.height - 65))
-
 
     def render_leaderboard(self, x, y):
         """Render leaderboard"""
@@ -581,6 +583,15 @@ class TicTacToeGame:
 
         return button
 
+
+
+    def run(self):
+        """Main game loop"""
+        while True:
+            self.handle_events()
+            #self.update()
+            self.render()
+            pygame.display.flip()
 
 if __name__ == "__main__":
     game = TicTacToeGame()
