@@ -26,6 +26,7 @@ class Colors:
 class TicTacToeGame:
 
     def __init__(self):
+        print("Initializing game...")
         pygame.init()
         self.size = self.width, self.height = 800, 600
         self.screen = pygame.display.set_mode(self.size)
@@ -60,6 +61,7 @@ class TicTacToeGame:
 
     def initialize_storage(self):
         """Initialize storage for player stats"""
+        print("Initializing storage...")
         self.data_folder.mkdir(exist_ok=True)
         if not self.data_file.exists():
             initiated = {}
@@ -68,26 +70,28 @@ class TicTacToeGame:
 
     def load_stats(self):
         """Load player statistics"""
+        print("Loading player stats...")
         try:
             with open(self.data_file, 'r') as f:
                 data = json.load(f)
                 if not data:  # Handle empty file case
                     return {}
                 return data
-        except (FileNotFoundError, json.JSONDecodeError):
+        except (FileNotFoundError, json.JSONDecodeError, ValueError):
             # If file doesn't exist or is corrupted, create new one
             initial_data = {}
-            with open(self.data_file, 'w') as f:
-                json.dump(initial_data, f)
+            self.save_stats(initial_data)
             return initial_data
 
     def save_stats(self, stats):
         """Save player stats to file .json"""
+        print("Saving player stats...")
         with open(self.data_file, 'w') as f:
             json.dump(stats, f, indent=4)
 
     def draw_text(self, text, font, color, center):
         """Utility function to render text at a specific center."""
+        print("Drawing text: ", text)
         rendered_text = font.render(text, True, color)
         rect = rendered_text.get_rect()
         rect.center = center
@@ -95,36 +99,32 @@ class TicTacToeGame:
 
     def update_player_stats(self, player_name, won=False, tied=False):
         """Update player statistics"""
+        print(f"Updating stats for {player_name}")
+
         stats = self.load_stats()
         if player_name not in stats:
             stats[player_name] = {"wins": 0, "losses": 0, "ties": 0}
 
-        if self.stats_updated:
-            if tied:
-                stats[player_name]["ties"] += 1
-                print("tie")
-            elif won:
-                stats[player_name]["wins"] += 1
-                print("win")
-            else:
-                stats[player_name]["losses"] += 1
-                print("loss")
-        self.stats_updated = False
-        self.save_stats(stats)
+        if tied:
+            stats[player_name]["ties"] += 1
+            print("tie")
+        elif won:
+            stats[player_name]["wins"] += 1
+            print("win")
+        else:
+            stats[player_name]["losses"] += 1
+            print("loss")
 
-    def run(self):
-        """Main game loop"""
-        while True:
-            self.handle_events()
-            self.update()
-            self.render()
-            pygame.display.flip()
+        self.save_stats(stats)
 
     def handle_events(self):
         """Handle game events"""
+        print("Handling events...")
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                pygame.quit()
                 sys.exit()
+
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = pygame.mouse.get_pos()
                 self.handle_click(mouse_pos)
@@ -150,17 +150,20 @@ class TicTacToeGame:
 
     def handle_click(self, mouse_pos):
         """Handle mouse clicks based on game state"""
-        if self.state == GameState.MENU:
-            self.handle_menu_click(mouse_pos)
-        elif self.state == GameState.PLAYER_SELECTION:
-            self.handle_player_selection_click(mouse_pos)
-        elif self.state == GameState.GAME:
-            self.handle_game_click(mouse_pos)
-        elif self.state == GameState.GAME_OVER:
-            self.handle_game_over_click(mouse_pos)
+        print("Handling clicks...")
+        click_handlers = {
+            GameState.MENU: self.handle_menu_click,
+            GameState.PLAYER_SELECTION: self.handle_player_selection_click,
+            GameState.GAME: self.handle_game_click,
+            GameState.GAME_OVER: self.handle_game_over_click,
+        }
+        handler = click_handlers.get(self.state)
+        if handler:
+            handler(mouse_pos)
 
     def handle_menu_click(self, mouse_pos):
         """Handle clicks in the menu state"""
+        print("Handling menu clicks...")
         vs_ai_button = pygame.Rect(self.width // 4 - 100, self.height // 2, 200, 50)
         vs_player_button = pygame.Rect(3 * self.width // 4 - 100, self.height // 2, 200, 50)
 
@@ -177,6 +180,7 @@ class TicTacToeGame:
 
     def handle_player_selection_click(self, mouse_pos):
         """Handle clicks in the player selection state"""
+        print("Handling player selection clicks...")
         play_x_button = pygame.Rect(self.width // 4 - 100, self.height // 2, 200, 50)
         play_o_button = pygame.Rect(3 * self.width // 4 - 100, self.height // 2, 200, 50)
 
@@ -196,17 +200,36 @@ class TicTacToeGame:
 
 
         elif self.game_mode == "2P":
-
+            print("Game mode chosen: 2P")
             # Check if start button is clicked
             start_button = pygame.Rect(self.width // 2 - 100, self.height * 3 // 4, 200, 50)
             if start_button.collidepoint(mouse_pos):
-                if self.input_texts["player1"] and self.input_texts["player2"]:
-                    self.current_players["X"] = self.input_texts["player1"]
-                    self.current_players["O"] = self.input_texts["player2"]
+                print("Start button clicked")
+                player1 = self.input_texts.get("player1")
+                player2 = self.input_texts.get("player2")
+
+                if player1 and player2:
+
+                    if player1 == player2:
+                        print("Duplicate names entered!")
+                        # Draw error message if names are not entered
+                        message = "Please enter unique player names to start"
+                        msg_surface = self.mediumFont.render(message, True, Colors.RED)
+                        msg_rect = msg_surface.get_rect(center=(self.width // 2, self.height // 2 + 60))
+                        self.screen.blit(msg_surface, msg_rect)
+                        pygame.display.flip()  # Update the display to show the message
+                        time.sleep(1)  # Show the message for 1 second
+                        return
+
+                    self.current_players["X"] = player1.strip()
+                    self.current_players["O"] = player2.strip()
+                    print("Both names entered!")
+
                     self.state = GameState.GAME
                     time.sleep(0.2)
 
                 else:
+                    print("Not all names entered!")
                     # Draw error message if names are not entered
                     message = "Please enter both player names to start"
                     msg_surface = self.mediumFont.render(message, True, Colors.RED)
@@ -217,6 +240,7 @@ class TicTacToeGame:
 
     def handle_game_click(self, mouse_pos):
         """Handle clicks during gameplay"""
+        print("Handling game clicks...")
         if ttt.terminal(self.board):
             return
 
@@ -247,6 +271,7 @@ class TicTacToeGame:
 
     def handle_game_over_click(self, mouse_pos):
         """Handle clicks in the game over state"""
+        print("Handling game over clicks...")
         play_again_button = pygame.Rect(self.width // 3 - 100, self.height - 65, 200, 50)
         main_menu_button = pygame.Rect(2 * self.width // 3 - 100, self.height - 65, 200, 50)
 
@@ -254,6 +279,9 @@ class TicTacToeGame:
             # Reset the game but keep the same players and mode
             self.board = ttt.initial_state()
             self.ai_turn = False
+            # Remove the _stats_final_updated flag to allow stats update in next game
+            if hasattr(self, '_stats_final_updated'):
+                delattr(self, '_stats_final_updated')
             self.stats_updated = False
             self.state = GameState.GAME
             time.sleep(0.2)
@@ -264,17 +292,41 @@ class TicTacToeGame:
             self.board = ttt.initial_state()
             self.ai_turn = False
             self.show_leaderboard = False
+            # Remove the _stats_final_updated flag
+            if hasattr(self, '_stats_final_updated'):
+                delattr(self, '_stats_final_updated')
             self.stats_updated = False
             self.current_players = {"X": None, "O": None}
             self.state = GameState.MENU
             time.sleep(0.2)
 
+    def handle_game_result(self):
+        """Determine game result and update stats"""
+        winner = ttt.winner(self.board)
+        if winner is None:
+            message = "Game Over: Tie!"
+
+            if self.game_mode == "2P" and not self.stats_updated:
+                self.update_player_stats(self.current_players["X"], tied=True)
+                self.update_player_stats(self.current_players["O"], tied=True)
+                self.stats_updated = True
+        else:
+            if self.game_mode == "2P" and not self.stats_updated:
+                winner_name = self.current_players[winner]
+                loser_symbol = "O" if winner == "X" else "X"
+                loser_name = self.current_players[loser_symbol]
+                self.update_player_stats(winner_name, won=True)
+                self.update_player_stats(loser_name, won=False)
+                self.stats_updated = True
+            message = f"Game Over: {winner} wins!"
+        return message
+
     def update(self):
         """Update game state"""
+        print("Updating game...")
         if self.state == GameState.GAME:
-            if self.game_mode == "AI" and not self.user == ttt.player(self.board) and not ttt.terminal(self.board):
+            if self.game_mode == "AI" and self.user != ttt.player(self.board) and not ttt.terminal(self.board):
                 if self.ai_turn:
-                    time.sleep(0.5)
                     move = ttt.minimax(self.board)
                     self.board = ttt.result(self.board, move)
                     self.ai_turn = False
@@ -283,6 +335,7 @@ class TicTacToeGame:
 
     def render(self):
         """Render game screen"""
+        print("Rendering game...")
         self.screen.fill(Colors.BLUE)
 
         if self.state == GameState.MENU:
@@ -301,6 +354,7 @@ class TicTacToeGame:
 
     def render_menu(self):
         """Render main menu"""
+        print("Rendering menu...")
         # Draw title
         title = self.largeFont.render("Play Tic-Tac-Toe", True, Colors.WHITE)
         title_rect = title.get_rect()
@@ -316,6 +370,7 @@ class TicTacToeGame:
 
     def render_player_selection(self):
         """Render player selection screen"""
+        print("Rendering player selection...")
         if self.game_mode == "AI":
             title = self.largeFont.render("Choose Your Side", True, Colors.ORANGE)
             title_rect = title.get_rect(center=(self.width // 2, 50))
@@ -353,6 +408,7 @@ class TicTacToeGame:
 
     def render_game(self):
         """Render game board"""
+        print("Rendering game...")
         # Draw game board
         tile_size = self.width // 6
         tile_origin = (self.width // 2 - (1.5 * tile_size),
@@ -378,17 +434,6 @@ class TicTacToeGame:
 
         # Draw game status
         if ttt.terminal(self.board):
-            if not self.stats_updated:  # Only update stats once when entering game over state
-                # Update stats
-                winner = ttt.winner(self.board)
-                if self.game_mode == "2P":
-                    if winner is None:  # Tie
-                        self.update_player_stats(self.current_players["X"], tied=True)
-                        self.update_player_stats(self.current_players["O"], tied=True)
-                    else:
-                        self.update_player_stats(self.current_players[winner], won=True)
-                        self.update_player_stats(self.current_players["O" if winner == "X" else "X"], won=False)
-                self.stats_updated = True  # Set flag to prevent further updates
             self.state = GameState.GAME_OVER
         else:
             player = ttt.player(self.board)
@@ -404,29 +449,11 @@ class TicTacToeGame:
 
     def render_game_over(self):
         """Render game over screen"""
+        print("Rendering game over...")
         self.render_game()  # Show final board state
 
-        # Show winner
-        winner = ttt.winner(self.board)
-        if winner is None:
-            message = "Game Over: Tie!"
-        else:
-            if self.game_mode == "2P":
-                winner_name = self.current_players[winner]
-                message = f"Game Over: {winner_name} wins!"
-            else:
-                message = "You Win!" if winner == self.user else "Computer Wins!"
-
-        # Update stats
-        if self.game_mode == "2P":
-            if winner is None:  # Tie
-                self.update_player_stats(self.current_players["X"], tied=True)
-                self.update_player_stats(self.current_players["O"], tied=True)
-            else:
-                self.update_player_stats(self.current_players[winner], won=True)
-                self.update_player_stats(self.current_players["O" if winner == "X" else "X"], won=False)
-
-        # Draw message and buttons
+        print("Print game result message: ")
+        message = self.handle_game_result()
         message_text = self.largeFont.render(message, True, Colors.WHITE)
         message_rect = message_text.get_rect()
         message_rect.center = (self.width / 2, 30)
@@ -441,6 +468,7 @@ class TicTacToeGame:
 
     def render_leaderboard(self, x, y):
         """Render leaderboard"""
+        print("Rendering leaderboard...")
         if not self.show_leaderboard:
             return
 
@@ -472,6 +500,7 @@ class TicTacToeGame:
 
     def draw_button(self, text, pos, size=(200, 50)):
         """Helper method to draw buttons"""
+        print(f"Drawing button: {text} at {pos}")
         button = pygame.Rect(pos[0] - size[0] // 2, pos[1], size[0], size[1])
         pygame.draw.rect(self.screen, Colors.WHITE, button)
 
@@ -481,21 +510,16 @@ class TicTacToeGame:
 
         return button
 
-    def draw_input_boxes(self):
-        """Draw input boxes for player names."""
-        # Input box 1
-        # color1 = pygame.Color('lightskyblue3') if self.input1_active else pygame.Color('gray15')
-        # pygame.draw.rect(self.screen, color1, self.input1_rect, 2)
-        # text1_surface = self.mediumFont.render(self.player1_name, True, self.white)
-        # self.screen.blit(text1_surface, (self.input1_rect.x + 10, self.input1_rect.y + 5))
-        # self.input1_rect.w = max(200, text1_surface.get_width() + 20)
-        #
-        # # Input box 2
-        # color2 = pygame.Color('lightskyblue3') if self.input2_active else pygame.Color('gray15')
-        # pygame.draw.rect(self.screen, color2, self.input2_rect, 2)
-        # text2_surface = self.mediumFont.render(self.player2_name, True, self.white)
-        # self.screen.blit(text2_surface, (self.input2_rect.x + 10, self.input2_rect.y + 5))
-        # self.input2_rect.w = max(200, text2_surface.get_width() + 20)
+
+    def run(self):
+        """Main game loop"""
+        print("Running game...")
+        while True:
+            self.handle_events()
+            self.update()
+            self.render()
+            pygame.display.flip()
+
 
 if __name__ == "__main__":
     game = TicTacToeGame()
