@@ -7,6 +7,17 @@ from pathlib import Path
 
 
 class GameState:
+    """Represents the different states of the game.
+
+    Attributes:
+        MENU (str): The state where the game is at the main menu.
+        PLAYER_SELECTION (str): The state where players select their mode or enter names.
+        GAME (str): The state where the game is actively being played.
+        GAME_OVER (str): The state after the game ends, showing results.
+        SCORES (str): The state displaying the leaderboard or scores.
+        SETTINGS (str): The state for managing game settings, such as themes.
+    """
+
     MENU = 'menu'
     PLAYER_SELECTION = 'player_selection'
     GAME = 'game'
@@ -14,7 +25,22 @@ class GameState:
     SCORES = 'scores'
     SETTINGS = 'settings'
 
+
 class Colors:
+    """Defines a collection of commonly used colors in the game, represented as RGB tuples.
+
+    Attributes:
+        BLACK (tuple): The color black, represented as (0, 0, 0).
+        WHITE (tuple): The color white, represented as (255, 255, 255).
+        BLUE (tuple): A shade of blue, represented as (87, 160, 211).
+        GREEN (tuple): The color green, represented as (0, 255, 0).
+        RED (tuple): The color red, represented as (255, 0, 0).
+        YELLOW (tuple): The color yellow, represented as (255, 255, 0).
+        PURPLE (tuple): The color purple, represented as (128, 0, 128).
+        ORANGE (tuple): The color orange, represented as (255, 165, 0).
+        GREY (tuple): A shade of grey, represented as (128, 128, 128).
+    """
+
     BLACK = (0, 0, 0)
     WHITE = (255, 255, 255)
     BLUE = (87, 160, 211)
@@ -25,15 +51,61 @@ class Colors:
     ORANGE = (255, 165, 0)
     GREY = (128, 128, 128)
 
+
 class ThemeManager:
+    """Manages themes for a game, including loading, saving, and applying themes.
+
+    Attributes:
+        theme_file (str): The path to the JSON file containing theme data.
+        themes (dict): A dictionary containing theme configurations.
+        current_theme (str): The currently selected theme.
+
+    Methods:
+        load_themes():
+            Loads theme data from the specified theme file.
+        
+        save_theme():
+            Saves the currently selected theme to a file.
+        
+        load_current_theme():
+            Loads the current theme from a save file.
+        
+        load_theme():
+            An alternate method to load the current theme.
+        
+        apply_theme():
+            Applies the currently selected theme to the game.
+        
+        get_theme():
+            Returns the active theme's data.
+    """
+
+
     def __init__(self, theme_file="game_data/theme.json", default_theme="Classic"):
+        """Initializes the ThemeManager.
+
+        Args:
+            theme_file (str): The path to the JSON file containing theme data. Defaults to "game_data/theme.json".
+            default_theme (str): The default theme to use if none is specified. Defaults to "Classic".
+        """
+
         self.theme_file = theme_file
         self.themes = {}
         self.current_theme = default_theme
         self.load_themes()
         self.load_current_theme()
         
+
     def load_themes(self):
+        """Loads theme data from the specified theme file.
+
+        Tries to read the theme configurations from the JSON file at `theme_file`. If the file is not found,
+        a default theme is returned.
+
+        Returns:
+            dict: A dictionary of themes if successfully loaded, or the default theme dictionary otherwise.
+        """
+
         themes_path = Path(self.theme_file)  # Path to the JSON file
         try:
             with themes_path.open("r") as f:
@@ -52,20 +124,37 @@ class ThemeManager:
                 }
             }
         
+
     def save_theme(self):
-        """Save the currently selected theme."""
+        """Saves the currently selected theme to a file.
+
+        Writes the `current_theme` to the `theme.json` file.
+        """
+
+
         with open("theme.json", "w") as f:
             json.dump({"current_theme": self.current_theme}, f)
 
+
     def load_current_theme(self):
-        """Load the currently selected theme from a save file."""
+        """Loads the current theme from a save file.
+
+        Reads the `current_theme` from the `theme.json` file. If the file is not found, defaults to "Classic".
+        """
+
         try:
             with open("theme.json", "r") as f:
                 self.current_theme = json.load(f).get("current_theme", "Classic")
         except FileNotFoundError:
             print("Theme save file not found. Defaulting to 'Classic'.")
 
+
     def load_theme(self):
+        """Loads the current theme from a save file (alternate method).
+
+        Reads the `current_theme` from the `theme.json` file. Defaults to "Classic" if the file is missing.
+        """
+
         try:
             with open("theme.json", "r") as f:
                 self.current_theme = json.load(f).get("current_theme", "Classic")
@@ -74,30 +163,82 @@ class ThemeManager:
 
 
     def apply_theme(self):
+        """Applies the currently selected theme to the game.
+
+        Sets the background color, grid, and other game elements based on the active theme.
+        """
+
         self.screen.fill(self.themes[self.current_theme]["background"])
         self.draw_grid()
         self.update_game_state()
 
     def get_theme(self):
-        """Get the active theme data."""
+        """Returns the active theme's data.
+
+        Fetches the data for the currently selected theme. If the theme does not exist, defaults to "Classic".
+
+        Returns:
+            dict: The active theme's configuration.
+        """
+
         return self.themes.get(self.current_theme, self.themes.get("Classic", {}))
 
+
 class StorageManager:
+    """Manages the storage of player statistics, including initialization, loading, saving, and updating stats.
+
+    Attributes:
+        data_folder (Path): The path to the folder where player statistics are stored.
+        data_file (Path): The path to the JSON file containing player statistics.
+
+    Methods:
+        initialize_storage():
+            Initializes the storage directory and creates the stats file if it does not exist.
+        
+        load_stats():
+            Loads player statistics from the stats file.
+        
+        save_stats(stats):
+            Saves the given player statistics to the stats file.
+        
+        update_player_stats(player_name, won=False, tied=False):
+            Updates the statistics for a specific player based on the game's outcome.
+    """
+
     def __init__(self, data_folder="game_data"):
+        """Initializes the StorageManager.
+
+        Args:
+            data_folder (str): The path to the folder where game data is stored. Defaults to "game_data".
+        """
+
         self.data_folder = Path(data_folder)
         self.data_file = self.data_folder / "player_stats.json"
         self.initialize_storage()
         
+
     def initialize_storage(self):
-        """Initialize storage for player stats"""
+        """Initializes the storage directory and creates the stats file if it does not exist.
+
+        Ensures that the specified folder exists and creates an empty JSON file for player statistics if none exists.
+        """
+
         self.data_folder.mkdir(exist_ok=True)
         if not self.data_file.exists():
             initiated = {}
             with open(self.data_file, 'w') as f:
                 json.dump(initiated, f)
 
+
     def load_stats(self):
-        """Load player statistics"""
+        """Loads player statistics from the stats file.
+
+        Tries to read player statistics from the JSON file. If the file is missing or corrupted, it creates a new empty file.
+
+        Returns:
+            dict: A dictionary of player statistics. If the file is empty or missing, returns an empty dictionary.
+        """
+
         try:
             with open(self.data_file, 'r') as f:
                 data = json.load(f)
@@ -111,13 +252,30 @@ class StorageManager:
                 json.dump(initial_data, f)
             return initial_data
         
+
     def save_stats(self, stats):
-        """Save player stats to file .json"""
+        """Saves the given player statistics to the stats file.
+
+        Args:
+            stats (dict): A dictionary containing player statistics to be saved.
+        """
+
         with open(self.data_file, 'w') as f:
             json.dump(stats, f, indent=4)
 
+
     def update_player_stats(self, player_name, won=False, tied=False):
-        """Update player statistics"""
+        """Updates the statistics for a specific player based on the game's outcome.
+
+        If the player does not exist in the stats, a new entry is created. Updates are made based on whether the player
+        won, lost, or tied the game.
+
+        Args:
+            player_name (str): The name of the player whose stats are being updated.
+            won (bool): Whether the player won the game. Defaults to False.
+            tied (bool): Whether the game was tied. Defaults to False.
+        """
+
         stats = self.load_stats()
         if player_name not in stats:
             stats[player_name] = {"wins": 0, "losses": 0, "ties": 0}
@@ -134,16 +292,63 @@ class StorageManager:
 
         self.save_stats(stats)
     
+
 class Renderer:
+    """Handles rendering of all game screens, elements, and user interfaces.
+
+    Attributes:
+        screen (pygame.Surface): The main display surface for rendering.
+        theme_manager (ThemeManager): Manages the game's themes and associated colors.
+        fonts (Fonts): Manages the fonts used throughout the game.
+        game (TicTacToeGame): The main game object, used for accessing game state.
+        state (GameState): The current game state.
+
+    Methods:
+        render():
+            Renders the current game screen based on the game state.
+
+        draw_text(text, font, color, center):
+            Renders a single line of text at a specific position.
+
+        draw_button(text, pos, size, border_radius):
+            Draws a button with specified text and position.
+
+        render_menu():
+            Renders the main menu screen.
+
+        render_settings():
+            Renders the settings screen for selecting themes.
+
+        render_player_selection():
+            Renders the player selection screen (vs AI or 2P mode).
+
+        render_game():
+            Renders the game board and player moves.
+
+        render_game_over():
+            Renders the game over screen and final results.
+
+        render_leaderboard(x, y):
+            Renders the leaderboard showing top player rankings.
+
+        render_scores():
+            Renders the scores screen, including the leaderboard.
+    """
+
+
     def __init__(self, game, screen, theme_manager, fonts, state=GameState.MENU):
+        """Initializes the Renderer with game, screen, theme, and font information."""
+
         self.screen = screen
         self.theme_manager = theme_manager 
         self.fonts = fonts
         self.game = game
         self.state = self.game.state
 
+
     def render(self):
-        """Render game screen"""
+        """Renders the appropriate game screen based on the current game state."""
+
         theme = self.theme_manager.get_theme()
         self.screen.fill(theme["background"])  # Use theme background color
 
@@ -161,15 +366,36 @@ class Renderer:
         elif self.game.state == GameState.SETTINGS:
             self.render_settings()
 
+
     def draw_text(self, text, font, color, center):
-        """Utility function to render text at a specific center."""
+        """Utility function to render a single line of text at a specific center position.
+
+        Args:
+            text (str): The text to render.
+            font (pygame.font.Font): The font object for rendering.
+            color (tuple): The RGB color of the text.
+            center (tuple): The center position of the text.
+        """
+
         rendered_text = font.render(text, True, color)
         rect = rendered_text.get_rect()
         rect.center = center
         self.screen.blit(rendered_text, rect)
 
+
     def draw_button(self, text, pos, size=(200, 50), border_radius=20):
-        """Helper method to draw buttons"""
+        """Helper method to draw buttons on the screen.
+
+        Args:
+            text (str): The text to display on the button.
+            pos (tuple): The position of the button's center.
+            size (tuple): The size (width, height) of the button.
+            border_radius (int): The radius for rounding button corners.
+
+        Returns:
+            pygame.Rect: The rectangle of the button for collision detection.
+        """
+
         theme = self.theme_manager.get_theme()
         button_color = theme["button_color"]
         text_color = theme["button_text_color"]
@@ -183,8 +409,10 @@ class Renderer:
 
         return button
     
+
     def render_menu(self):
-        """Render main menu"""
+        """Renders the main menu screen with title and navigation buttons."""
+
         theme = self.theme_manager.get_theme()
         # Draw title
         title = self.fonts.largeFont.render("Play Tic-Tac-Toe", True, theme["font_color"])
@@ -197,7 +425,10 @@ class Renderer:
         self.draw_button("2 Players", (3 * self.game.width // 4, self.game.height // 2))
         self.draw_button("Settings", (self.game.width // 4, self.game.height // 6))
 
+
     def render_settings(self):
+        """Renders the settings screen for selecting themes."""
+
         # Use the theme dictionary loaded from JSON
         theme = self.theme_manager.get_theme()
         self.screen.fill(theme["background"])  # Set background color
@@ -227,8 +458,10 @@ class Renderer:
         # Back button
         self.draw_button("Back", (self.game.width // 2, self.game.height * 3 // 4))
 
+
     def render_player_selection(self):
-        """Render player selection screen"""
+        """Renders the player selection screen for choosing sides or entering names."""
+
         theme = self.theme_manager.get_theme()
 
         if self.game.game_mode == "AI":
@@ -265,8 +498,10 @@ class Renderer:
             # Draw scores button to see the top rankings
             self.draw_button("Scores", (self.game.width // 1.5, self.game.height * 3 // 4))
 
+
     def render_game(self):
-        """Render game board"""
+        """Renders the game board, player moves, and status messages."""
+
         print(f"render_game: {self.game.user}")
         theme = self.theme_manager.get_theme()  # Load the current theme colors
         grid_color = theme["grid_color"]
@@ -329,8 +564,9 @@ class Renderer:
                     time.sleep(0.2)
                     self.game.ai_turn = True
 
+
     def render_game_over(self):
-        """Render game over screen"""
+        """Renders the game over screen with results and leaderboard."""
 
         theme = self.theme_manager.get_theme()
         print("Rendering game over...")
@@ -350,8 +586,9 @@ class Renderer:
         self.draw_button("Play Again", (self.game.width // 3, self.game.height - 65))
         self.draw_button("Main Menu", (2 * self.game.width // 3, self.game.height - 65))
 
+
     def render_leaderboard(self, x, y):
-        """Render leaderboard"""
+        """Renders the leaderboard showing the top player rankings."""
 
         theme = self.theme_manager.get_theme()
         if not self.game.show_leaderboard:
@@ -380,7 +617,7 @@ class Renderer:
 
 
     def render_scores(self):
-        """Render the scores screen with the leaderboard."""
+        """Renders the scores screen, including the leaderboard."""
 
         theme = self.theme_manager.get_theme()
         # Draw heading
@@ -395,14 +632,64 @@ class Renderer:
         # Draw a back button
         self.draw_button("Back", (self.game.width // 2, self.game.height * 3 // 4))
 
+
 class EventHandler:
+    """Handles events and user interactions within the game, such as mouse clicks, keyboard input, and state changes.
+
+    Attributes:
+        game (Game): The main game object containing game state and logic.
+        fonts (Fonts): The font manager for rendering text.
+        state (GameState): The current game state.
+
+    Methods:
+        handle_events():
+            Processes all user events, including mouse and keyboard input.
+
+        handle_click(mouse_pos):
+            Handles mouse click events based on the current game state.
+
+        handle_settings_click(mouse_pos):
+            Handles clicks in the settings state.
+
+        handle_scores_click(mouse_pos):
+            Handles clicks in the scores state.
+
+        handle_menu_click(mouse_pos):
+            Handles clicks in the menu state.
+
+        handle_player_selection_click(mouse_pos):
+            Handles clicks in the player selection state.
+
+        handle_game_click(mouse_pos):
+            Handles mouse clicks during gameplay.
+
+        handle_game_over_click(mouse_pos):
+            Handles clicks in the game over state.
+
+        handle_game_result():
+            Determines the result of the game and updates player stats if necessary.
+    """
+
     def __init__(self, game, fonts, state):
+        """Initializes the EventHandler.
+
+        Args:
+            game (Game): The main game object containing game state and logic.
+            fonts (Fonts): The font manager for rendering text.
+            state (GameState): The current game state.
+        """
+
         self.game = game
         self.fonts = fonts
         self.state = self.game.state
         
+
     def handle_events(self):
-        """Handle game events"""
+        """Processes all user events, including mouse and keyboard input.
+
+        Handles quitting the game, mouse clicks, and keyboard input for player name entry during player selection.
+        """
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -431,8 +718,14 @@ class EventHandler:
                     if len(self.game.input_texts[self.game.active_input]) < 15:  # Limit name length
                         self.game.input_texts[self.game.active_input] += event.unicode
 
+
     def handle_click(self, mouse_pos):
-        """Handle mouse clicks based on game state"""
+        """Handles mouse click events based on the current game state.
+
+        Args:
+            mouse_pos (tuple): The position of the mouse click.
+        """
+
         if self.game.state == GameState.MENU:
             self.handle_menu_click(mouse_pos)
         elif self.game.state == GameState.PLAYER_SELECTION:
@@ -448,7 +741,12 @@ class EventHandler:
 
 
     def handle_settings_click(self, mouse_pos):
-        """Handle clicks in the settings state"""
+        """Handles clicks in the settings state.
+
+        Args:
+            mouse_pos (tuple): The position of the mouse click. Checks if buttons (e.g., Apply, Back) are clicked.
+        """
+
         back_button = pygame.Rect(self.game.width // 2 - 100, self.game.height * 3 // 4, 200, 50)
         apply_button = pygame.Rect(self.game.width // 2 - 100, self.game.height * 6 // 4, 200, 50)
 
@@ -461,7 +759,12 @@ class EventHandler:
 
 
     def handle_scores_click(self, mouse_pos):
-        """Handle clicks in the scores state"""
+        """Handles clicks in the scores state.
+
+        Args:
+            mouse_pos (tuple): The position of the mouse click. Checks if the back button is clicked.
+        """
+
         back_button = pygame.Rect(self.game.width // 2 - 100, self.game.height * 3 // 4, 200, 50)
 
         if back_button.collidepoint(mouse_pos):
@@ -469,8 +772,15 @@ class EventHandler:
             self.game.show_leaderboard = False
             time.sleep(0.2)
 
+
     def handle_menu_click(self, mouse_pos):
-        """Handle clicks in the menu state"""
+        """Handles clicks in the menu state.
+
+        Args:
+            mouse_pos (tuple): The position of the mouse click. Determines if the player wants to play vs AI,
+            play vs another player, or enter the settings menu.
+        """
+
         vs_ai_button = pygame.Rect(self.game.width // 4 - 100, self.game.height // 2, 200, 50)
         vs_player_button = pygame.Rect(3 * self.game.width // 4 - 100, self.game.height // 2, 200, 50)
         settings_button = pygame.Rect(self.game.width // 4 - 100, self.game.height // 6, 200, 50)
@@ -494,8 +804,15 @@ class EventHandler:
             self.game.state = GameState.SETTINGS
             time.sleep(0.2)
 
+
     def handle_player_selection_click(self, mouse_pos):
-        """Handle clicks in the player selection state"""
+        """Handles clicks in the player selection state.
+
+        Args:
+            mouse_pos (tuple): The position of the mouse click. Checks for clicks on start buttons, name entry
+            boxes, or scores display.
+        """
+
         if ttt.terminal(self.game.board):
             return
         current_player = ttt.player(self.game.board)
@@ -559,7 +876,13 @@ class EventHandler:
 
 
     def handle_game_click(self, mouse_pos):
-        """Handle clicks during gameplay"""
+        """Handles mouse clicks during gameplay.
+
+        Args:
+            mouse_pos (tuple): The position of the mouse click. Determines which tile on the board is clicked
+            and makes a move if it's valid.
+        """
+
         if ttt.terminal(self.game.board):
             return
 
@@ -596,7 +919,13 @@ class EventHandler:
                     return
 
     def handle_game_over_click(self, mouse_pos):
-        """Handle clicks in the game over state"""
+        """Handles clicks in the game over state.
+
+        Args:
+            mouse_pos (tuple): The position of the mouse click. Checks if the player wants to play again or
+            return to the main menu.
+        """
+
         play_again_button = pygame.Rect(self.game.width // 3 - 100, self.game.height - 65, 200, 50)
         main_menu_button = pygame.Rect(2 * self.game.width // 3 - 100, self.game.height - 65, 200, 50)
 
@@ -619,8 +948,15 @@ class EventHandler:
             self.game.state = GameState.MENU
             time.sleep(0.2)
 
+
     def handle_game_result(self):
-        """Determine game result and update stats"""
+        """Determines the result of the game and updates player stats if necessary.
+
+        Determines if the game ended in a win or a tie and updates the player statistics accordingly.
+        Returns:
+            str: A message summarizing the game result, such as "Game Over: Tie!" or "Game Over: [Player] wins!".
+        """
+
         winner = ttt.winner(self.game.board)
         if winner is None:
             message = "Game Over: Tie!"
@@ -640,15 +976,60 @@ class EventHandler:
             message = f"Game Over: {self.game.current_players[winner]} wins!"
         return message
 
+
 class Fonts:
+    """Manages font resources for the game, providing different sizes for various UI elements.
+
+    Attributes:
+        mediumFont (pygame.font.Font): A medium-sized font, typically used for buttons and smaller text.
+        largeFont (pygame.font.Font): A large-sized font, typically used for titles and headings.
+        moveFont (pygame.font.Font): A large-sized font used for displaying moves (X and O) on the game board.
+    """
+
     def __init__(self):
+        """Initializes the Fonts object, loading font resources with specific sizes."""
+
         # Fonts
         self.mediumFont = pygame.font.Font("OpenSans-Regular.ttf", 28)
         self.largeFont = pygame.font.Font("OpenSans-Regular.ttf", 40)
         self.moveFont = pygame.font.Font("OpenSans-Regular.ttf", 60)
 
+
 class TicTacToeGame:
+    """Represents the main Tic-Tac-Toe game, including initialization, game state management, and the main loop.
+
+    Attributes:
+        size (tuple): The dimensions of the game window.
+        width (int): The width of the game window.
+        height (int): The height of the game window.
+        screen (pygame.Surface): The main game display surface.
+        fonts (Fonts): The font manager for rendering text.
+        game_mode (str): The current game mode, either None, "AI", or "2P".
+        user (str): The user/player's symbol, either "X" or "O".
+        board (list): The current game board state.
+        ai_turn (bool): Whether it's the AI's turn.
+        show_leaderboard (bool): Whether the leaderboard is being displayed.
+        state (GameState): The current game state.
+        stats_updated (bool): Whether player statistics have been updated after a game.
+        current_theme (str): The current theme of the game.
+        theme_manager (ThemeManager): Manages themes and visual elements.
+        storage_manager (StorageManager): Handles saving and loading of player statistics.
+        renderer (Renderer): Handles rendering of the game visuals.
+        event_handler (EventHandler): Handles user events such as mouse clicks and key presses.
+        input_boxes (dict): Rectangles for player name input fields.
+        input_texts (dict): Text entered for player names.
+        active_input (str): The currently active input box.
+        input_labels (dict): Labels for the input boxes.
+        current_players (dict): Maps "X" and "O" to player names.
+
+    Methods:
+        run():
+            The main game loop, continuously handling events and rendering the game.
+    """
+
     def __init__(self):
+        """Initializes the Tic-Tac-Toe game."""
+
         pygame.init()
         self.size = self.width, self.height = 800, 600
         self.screen = pygame.display.set_mode(self.size)
@@ -685,11 +1066,16 @@ class TicTacToeGame:
 
 
     def run(self):
-        """Main game loop"""
+        """The main game loop.
+
+        Continuously handles user input, updates the game state, and renders the screen.
+        """
+
         while True:
             self.event_handler.handle_events()
             self.renderer.render()
             pygame.display.flip()
+
 
 if __name__ == "__main__":
     game = TicTacToeGame()
