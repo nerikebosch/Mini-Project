@@ -12,6 +12,7 @@ class GameState:
     GAME = 'game'
     GAME_OVER = 'game_over'
     SCORES = 'scores'
+    SETTINGS = 'settings'
 
 class Colors:
     BLACK = (0, 0, 0)
@@ -43,6 +44,7 @@ class TicTacToeGame:
         self.show_leaderboard = False
         self.state = GameState.MENU
         self.stats_updated = False
+        self.current_theme = "Classic"
 
         # Player data
         self.data_folder = Path("game_data")
@@ -58,6 +60,26 @@ class TicTacToeGame:
         self.active_input = None
         self.input_texts = {"player1": "", "player2": ""}
         self.input_labels = {"player1": "Player 1 (X)", "player2": "Player 2 (O)"}
+
+
+    def save_theme(self):
+        with open("theme.json", "w") as f:
+            json.dump({"current_theme": self.current_theme}, f)
+
+
+    def load_theme(self):
+        try:
+            with open("theme.json", "r") as f:
+                self.current_theme = json.load(f)["current_theme"]
+        except FileNotFoundError:
+            self.current_theme = "Classic"  # Default theme
+
+
+    def apply_theme(self):
+        self.screen.fill(self.themes[self.current_theme]["background"])
+        self.draw_grid()
+        self.update_game_state()
+
 
     def initialize_storage(self):
         """Initialize storage for player stats"""
@@ -161,6 +183,21 @@ class TicTacToeGame:
             self.handle_game_over_click(mouse_pos)
         elif self.state == GameState.SCORES:
             self.handle_scores_click(mouse_pos)
+        elif self.state == GameState.SETTINGS:
+            self.handle_settings_click(mouse_pos)
+
+
+    def handle_settings_click(self, mouse_pos):
+        """Handle clicks in the settings state"""
+        back_button = pygame.Rect(self.width // 2 - 100, self.height * 3 // 4, 200, 50)
+        apply_button = pygame.Rect(self.width // 2 - 100, self.height * 6 // 4, 200, 50)
+
+        if apply_button.collidepoint(mouse_pos):
+            self.state = GameState.MENU
+            time.sleep(0.2)
+        elif back_button.collidepoint(mouse_pos):
+            self.state = GameState.MENU
+            time.sleep(0.2)
 
 
     def handle_scores_click(self, mouse_pos):
@@ -176,6 +213,7 @@ class TicTacToeGame:
         """Handle clicks in the menu state"""
         vs_ai_button = pygame.Rect(self.width // 4 - 100, self.height // 2, 200, 50)
         vs_player_button = pygame.Rect(3 * self.width // 4 - 100, self.height // 2, 200, 50)
+        settings_button = pygame.Rect(self.width // 4 - 100, self.height // 6, 200, 50)
 
         if vs_ai_button.collidepoint(mouse_pos):
             self.game_mode = "AI"
@@ -186,6 +224,9 @@ class TicTacToeGame:
             self.show_leaderboard = False
             self.input_texts = {"player1": "", "player2": ""}
             self.state = GameState.PLAYER_SELECTION
+            time.sleep(0.2)
+        elif settings_button.collidepoint(mouse_pos):
+            self.state = GameState.SETTINGS
             time.sleep(0.2)
 
     def handle_player_selection_click(self, mouse_pos):
@@ -320,6 +361,8 @@ class TicTacToeGame:
             self.render_game_over()
         elif self.state == GameState.SCORES:
             self.render_scores()
+        elif self.state == GameState.SETTINGS:
+            self.render_settings()
 
     def render_menu(self):
         """Render main menu"""
@@ -332,6 +375,29 @@ class TicTacToeGame:
         # Draw buttons
         self.draw_button("vs AI", (self.width // 4, self.height // 2))
         self.draw_button("2 Players", (3 * self.width // 4, self.height // 2))
+        self.draw_button("Settings", (self.width // 4, self.height // 6))
+
+    
+    def render_settings(self):
+        theme = THEMES[self.current_theme]
+        self.screen.fill(theme["background"])
+
+        # Heading
+        heading = self.largeFont.render("Settings", True, theme["font_color"])
+        heading_rect = heading.get_rect(center=(self.width // 2, 50))
+        self.screen.blit(heading, heading_rect)
+
+        # Theme buttons
+        y_offset = 150
+        for theme_name in self.themes.keys():
+            button = self.draw_button(theme_name, (self.width // 2, y_offset), size=(200, 50))
+            if button.collidepoint(pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
+                self.current_theme = theme_name
+                self.save_theme()  # Save the selected theme
+            y_offset += 70
+
+        # Back button
+        back_button = self.draw_button("Back", (self.width // 2, self.height - 100))
 
     
 
@@ -502,30 +568,19 @@ class TicTacToeGame:
 
     def draw_button(self, text, pos, size=(200, 50), border_radius=20):
         """Helper method to draw buttons"""
-        button = pygame.Rect(pos[0] - size[0] // 2, pos[1], size[0], size[1])
-        pygame.draw.rect(self.screen, Colors.WHITE, button, border_radius=border_radius)
+        theme = self.themes[self.current_theme]
+        button_color = theme["button_color"]
+        text_color = theme["button_text_color"]
 
-        text_surface = self.mediumFont.render(text, True, Colors.BLACK)
+        button = pygame.Rect(pos[0] - size[0] // 2, pos[1], size[0], size[1])
+        pygame.draw.rect(self.screen, button_color, button, border_radius=border_radius)
+
+        text_surface = self.mediumFont.render(text, True, text_color)
         text_rect = text_surface.get_rect(center=button.center)
         self.screen.blit(text_surface, text_rect)
 
         return button
 
-    def draw_input_boxes(self):
-        """Draw input boxes for player names."""
-        # Input box 1
-        # color1 = pygame.Color('lightskyblue3') if self.input1_active else pygame.Color('gray15')
-        # pygame.draw.rect(self.screen, color1, self.input1_rect, 2)
-        # text1_surface = self.mediumFont.render(self.player1_name, True, self.white)
-        # self.screen.blit(text1_surface, (self.input1_rect.x + 10, self.input1_rect.y + 5))
-        # self.input1_rect.w = max(200, text1_surface.get_width() + 20)
-        #
-        # # Input box 2
-        # color2 = pygame.Color('lightskyblue3') if self.input2_active else pygame.Color('gray15')
-        # pygame.draw.rect(self.screen, color2, self.input2_rect, 2)
-        # text2_surface = self.mediumFont.render(self.player2_name, True, self.white)
-        # self.screen.blit(text2_surface, (self.input2_rect.x + 10, self.input2_rect.y + 5))
-        # self.input2_rect.w = max(200, text2_surface.get_width() + 20)
 
 if __name__ == "__main__":
     game = TicTacToeGame()

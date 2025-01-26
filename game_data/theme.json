@@ -1,0 +1,29 @@
+{
+    "Classic": {
+        "background": [30, 30, 30],
+        "grid_color": [255, 255, 255],
+        "x_color": [200, 0, 0],
+        "o_color": [0, 0, 200],
+        "font_color": [255, 255, 255],
+        "button_color": [50, 50, 50],
+        "button_text_color": [255, 255, 255]
+    },
+    "Neon": {
+        "background": [10, 10, 30],
+        "grid_color": [0, 255, 0],
+        "x_color": [255, 0, 255],
+        "o_color": [0, 255, 255],
+        "font_color": [255, 255, 0],
+        "button_color": [0, 50, 50],
+        "button_text_color": [0, 255, 0]
+    },
+    "Pastel": {
+        "background": [245, 245, 220],
+        "grid_color": [120, 120, 120],
+        "x_color": [255, 182, 193],
+        "o_color": [173, 216, 230],
+        "font_color": [105, 105, 105],
+        "button_color": [255, 239, 213],
+        "button_text_color": [105, 105, 105]
+    }
+}
