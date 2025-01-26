@@ -1,7 +1,7 @@
 {
     "qwe": {
-        "wins": 1045,
-        "losses": 0,
+        "wins": 1047,
+        "losses": 2,
         "ties": 255
     },
     "ewq": {
@@ -11,7 +11,7 @@
     },
     "asd": {
         "wins": 646,
-        "losses": 0,
+        "losses": 1,
         "ties": 337
     },
     "trdcv": {
@@ -22,6 +22,21 @@
     "sgfdh": {
         "wins": 261,
         "losses": 0,
+        "ties": 0
+    },
+    "sdf": {
+        "wins": 1,
+        "losses": 0,
+        "ties": 0
+    },
+    "nerike": {
+        "wins": 1,
+        "losses": 0,
+        "ties": 0
+    },
+    "michelle": {
+        "wins": 0,
+        "losses": 1,
         "ties": 0
     }
 }

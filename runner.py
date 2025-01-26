@@ -44,7 +44,10 @@ class TicTacToeGame:
         self.show_leaderboard = False
         self.state = GameState.MENU
         self.stats_updated = False
-        self.current_theme = "Classic"
+
+        # Themes
+        self.current_theme = "Classic"  # Default theme
+        self.themes = self.load_themes()  # Load themes from JSON file
 
         # Player data
         self.data_folder = Path("game_data")
@@ -61,18 +64,39 @@ class TicTacToeGame:
         self.input_texts = {"player1": "", "player2": ""}
         self.input_labels = {"player1": "Player 1 (X)", "player2": "Player 2 (O)"}
 
+    def load_themes(self):
+        themes_path = Path("game_data") / "theme.json"  # Path to the JSON file
+        try:
+            with themes_path.open("r") as f:
+                themes = json.load(f)
+                print("Loaded themes:", themes)  # Debug: Print loaded themes
+                return themes
+        except FileNotFoundError:
+            print(f"{themes_path} file not found. Using default themes.")
+            return {
+                "Classic": {
+                    "background": [30, 30, 30],
+                    "grid_color": [255, 255, 255],
+                    "x_color": [200, 0, 0],
+                    "o_color": [0, 0, 200],
+                    "font_color": [255, 255, 255],
+                    "button_color": [50, 50, 50],
+                    "button_text_color": [255, 255, 255],
+                }
+            }
 
     def save_theme(self):
-        with open("theme.json", "w") as f:
+        themes_path = Path("game_data") / "themes.json"  # Path to the JSON file
+        with themes_path.open("w") as f:
             json.dump({"current_theme": self.current_theme}, f)
 
 
     def load_theme(self):
         try:
             with open("theme.json", "r") as f:
-                self.current_theme = json.load(f)["current_theme"]
+                self.current_theme = json.load(f).get("current_theme", "Classic")
         except FileNotFoundError:
-            self.current_theme = "Classic"  # Default theme
+            self.current_theme = "Classic"  # Default to "Classic" if the file is missing
 
 
     def apply_theme(self):
@@ -133,7 +157,6 @@ class TicTacToeGame:
             print("loss")
 
         self.save_stats(stats)
-
 
 
     def handle_events(self):
@@ -361,7 +384,8 @@ class TicTacToeGame:
 
     def render(self):
         """Render game screen"""
-        self.screen.fill(Colors.BLUE)
+        theme = self.themes[self.current_theme]
+        self.screen.fill(theme["background"])  # Use theme background color
 
         if self.state == GameState.MENU:
             self.render_menu()
@@ -383,8 +407,9 @@ class TicTacToeGame:
 
     def render_menu(self):
         """Render main menu"""
+        theme = self.themes[self.current_theme]
         # Draw title
-        title = self.largeFont.render("Play Tic-Tac-Toe", True, Colors.WHITE)
+        title = self.largeFont.render("Play Tic-Tac-Toe", True, theme["font_color"])
         title_rect = title.get_rect()
         title_rect.center = (self.width // 2, 50)
         self.screen.blit(title, title_rect)
@@ -396,8 +421,9 @@ class TicTacToeGame:
 
     
     def render_settings(self):
-        theme = THEMES[self.current_theme]
-        self.screen.fill(theme["background"])
+        # Use the theme dictionary loaded from JSON
+        theme = self.themes[self.current_theme]
+        self.screen.fill(theme["background"])  # Set background color
 
         # Heading
         heading = self.largeFont.render("Settings", True, theme["font_color"])
@@ -407,28 +433,39 @@ class TicTacToeGame:
         # Theme buttons
         y_offset = 150
         for theme_name in self.themes.keys():
-            button = self.draw_button(theme_name, (self.width // 2, y_offset), size=(200, 50))
+            # Draw button for each theme
+            button = self.draw_button(
+                theme_name,
+                (self.width // 2, y_offset),
+                size=(200, 50)
+            )
+
+            # Check if the button is clicked
             if button.collidepoint(pygame.mouse.get_pos()) and pygame.mouse.get_pressed()[0]:
-                self.current_theme = theme_name
-                self.save_theme()  # Save the selected theme
+                self.current_theme = theme_name  # Update current theme
+                self.save_theme()  # Save the selected theme to the JSON file
+
             y_offset += 70
 
         # Back button
-        back_button = self.draw_button("Back", (self.width // 2, self.height - 100))
+        self.draw_button("Back", (self.width // 2, self.height * 3 // 4))
+        
 
     
 
     def render_player_selection(self):
         """Render player selection screen"""
+        theme = self.themes[self.current_theme]
+
         if self.game_mode == "AI":
-            title = self.largeFont.render("Choose Your Side", True, Colors.WHITE)
+            title = self.largeFont.render("Choose Your Side", True, theme["font_color"])
             title_rect = title.get_rect(center=(self.width // 2, 50))
             self.screen.blit(title, title_rect)
 
             self.draw_button("Play as X", (self.width // 4, self.height // 2))
             self.draw_button("Play as O", (3 * self.width // 4, self.height // 2))
         else: # 2P
-            title = self.largeFont.render("Enter Player Names", True, Colors.WHITE)
+            title = self.largeFont.render("Enter Player Names", True, theme["font_color"])
             title_rect = title.get_rect(center=(self.width // 2, 50))
             self.screen.blit(title, title_rect)
 
@@ -438,12 +475,12 @@ class TicTacToeGame:
                 pygame.draw.rect(self.screen, color, box, 2)
 
                 # Draw label
-                label = self.mediumFont.render(self.input_labels[box_name], True, Colors.WHITE)
+                label = self.mediumFont.render(self.input_labels[box_name], True, theme["font_color"])
                 label_rect = label.get_rect(bottomleft=(box.left, box.top - 5))
                 self.screen.blit(label, label_rect)
 
                 # Draw input text
-                text_surface = self.mediumFont.render(self.input_texts[box_name], True, Colors.WHITE)
+                text_surface = self.mediumFont.render(self.input_texts[box_name], True, theme["font_color"])
                 self.screen.blit(text_surface, (box.x + 5, box.y + 5))
 
             # Draw start button if both names are entered
@@ -457,6 +494,12 @@ class TicTacToeGame:
 
     def render_game(self):
         """Render game board"""
+
+        theme = self.themes[self.current_theme]  # Load the current theme colors
+        grid_color = theme["grid_color"]
+        x_color = theme["x_color"]
+        o_color = theme["o_color"]
+
         # Draw game board
         tile_size = self.width // 6
         tile_origin = (self.width // 2 - (1.5 * tile_size),
@@ -470,10 +513,11 @@ class TicTacToeGame:
                     tile_origin[1] + i * tile_size,
                     tile_size, tile_size
                 )
-                pygame.draw.rect(self.screen, Colors.WHITE, rect, 3)
+                pygame.draw.rect(self.screen, grid_color, rect, 3)
 
                 if self.board[i][j] != ttt.EMPTY:
-                    move = self.moveFont.render(self.board[i][j], True, Colors.WHITE)
+                    move_color = x_color if self.board[i][j] == "X" else o_color
+                    move = self.moveFont.render(self.board[i][j], True, move_color)  # Use x_color or o_color
                     move_rect = move.get_rect()
                     move_rect.center = rect.center
                     self.screen.blit(move, move_rect)
@@ -491,7 +535,7 @@ class TicTacToeGame:
             else:
                 status = "Your Turn" if player == self.user else "Computer Thinking..."
 
-            status_text = self.largeFont.render(status, True, Colors.WHITE)
+            status_text = self.largeFont.render(status, True, theme["font_color"])
             status_rect = status_text.get_rect()
             status_rect.center = (self.width // 2, 30)
             self.screen.blit(status_text, status_rect)
@@ -509,12 +553,14 @@ class TicTacToeGame:
 
     def render_game_over(self):
         """Render game over screen"""
+
+        theme = self.themes[self.current_theme]
         print("Rendering game over...")
         self.render_game()  # Show final board state
 
         print("Print game result message: ")
         message = self.handle_game_result()
-        message_text = self.largeFont.render(message, True, Colors.WHITE)
+        message_text = self.largeFont.render(message, True, theme["font_color"])
         message_rect = message_text.get_rect()
         message_rect.center = (self.width / 2, 30)
         self.screen.blit(message_text, message_rect)
@@ -528,6 +574,8 @@ class TicTacToeGame:
 
     def render_leaderboard(self, x, y):
         """Render leaderboard"""
+
+        theme = self.themes[self.current_theme]
         if not self.show_leaderboard:
             return
 
@@ -548,15 +596,17 @@ class TicTacToeGame:
         # Draw top 10 players
         for i, (name, wins) in enumerate(players[:10]):
             ranking_text = f"{i + 1}. {name}: {wins} Wins"
-            player_text = self.mediumFont.render(ranking_text, True, Colors.WHITE)
+            player_text = self.mediumFont.render(ranking_text, True, theme["font_color"])
             text_rect = player_text.get_rect(center=(x, y + i * 30))
             self.screen.blit(player_text, text_rect)
 
 
     def render_scores(self):
         """Render the scores screen with the leaderboard."""
+
+        theme = self.themes[self.current_theme]
         # Draw heading
-        heading = self.largeFont.render("Top Rankings", True, Colors.WHITE)
+        heading = self.largeFont.render("Top Rankings", True, theme["font_color"])
         heading_rect = heading.get_rect(center=(self.screen.get_width() // 2, 100))
         self.screen.blit(heading, heading_rect)
 
