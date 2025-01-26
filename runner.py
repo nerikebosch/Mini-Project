@@ -148,14 +148,9 @@ class Renderer:
         self.screen.fill(theme["background"])  # Use theme background color
 
         if self.game.state == GameState.MENU:
-            
+            print(f"render: game.state MENU")
             self.render_menu()
         elif self.game.state == GameState.PLAYER_SELECTION:
-                # Check if the name has been entered for AI mode
-            if self.game.game_mode == "AI" and self.game.input_texts["player1"]:
-                self.player1_name = self.game.input_texts["player1"]
-                self.player2_name = "AI"
-                self.game.state = GameState.GAME
             self.render_player_selection()
         elif self.game.state == GameState.GAME:
             self.render_game()
@@ -237,13 +232,17 @@ class Renderer:
         theme = self.theme_manager.get_theme()
 
         if self.game.game_mode == "AI":
+            print("DEBUG: Rendering AI player selection screen")
+            print(f"DEBUG: Game state: {self.game.state}")
             title = self.fonts.largeFont.render("Choose Your Side", True, theme["font_color"])
             title_rect = title.get_rect(center=(self.game.width // 2, 50))
             self.screen.blit(title, title_rect)
 
             self.draw_button("Play as X", (self.game.width // 4, self.game.height // 2))
             self.draw_button("Play as O", (3 * self.game.width // 4, self.game.height // 2))
+
         else: # 2P
+            print("Render_player_selection 2P - Enter Player Names")
             title = self.fonts.largeFont.render("Enter Player Names", True, theme["font_color"])
             title_rect = title.get_rect(center=(self.game.width // 2, 50))
             self.screen.blit(title, title_rect)
@@ -262,16 +261,13 @@ class Renderer:
                 text_surface = self.fonts.mediumFont.render(self.game.input_texts[box_name], True, theme["font_color"])
                 self.screen.blit(text_surface, (box.x + 5, box.y + 5))
 
-            # Draw start button if both names are entered
-            #if self.input_texts["player1"] and self.input_texts["player2"]:
             self.draw_button("Start Game", (self.game.width // 3, self.game.height * 3 // 4))
-
             # Draw scores button to see the top rankings
             self.draw_button("Scores", (self.game.width // 1.5, self.game.height * 3 // 4))
 
     def render_game(self):
         """Render game board"""
-
+        print(f"render_game: {self.game.user}")
         theme = self.theme_manager.get_theme()  # Load the current theme colors
         grid_color = theme["grid_color"]
         x_color = theme["x_color"]
@@ -310,7 +306,12 @@ class Renderer:
             if self.game.game_mode == "2P":
                 status = f"Player {player_name}'s Turn"
             else:
-                status = "Your Turn" if player == self.game.user else "Computer Thinking..."
+                if self.game.ai_turn:
+                    print("DEBUG: AI Turn")
+                    status = f"Computer Thinking..."
+                else:
+                    status = f"Your Turn"
+
 
             status_text = self.fonts.largeFont.render(status, True, theme["font_color"])
             status_rect = status_text.get_rect()
@@ -475,7 +476,12 @@ class EventHandler:
         settings_button = pygame.Rect(self.game.width // 4 - 100, self.game.height // 6, 200, 50)
 
         if vs_ai_button.collidepoint(mouse_pos):
+            self.game.board = ttt.initial_state()
             self.game.game_mode = "AI"
+            self.show_leaderboard = False
+            self.game.user = None
+            self.game.ai_turn = False
+            self.game.current_players = {"X": None, "O": None}
             self.game.state = GameState.PLAYER_SELECTION
             time.sleep(0.2)  # Prevent double clicks
         elif vs_player_button.collidepoint(mouse_pos):
@@ -490,21 +496,27 @@ class EventHandler:
 
     def handle_player_selection_click(self, mouse_pos):
         """Handle clicks in the player selection state"""
+        if ttt.terminal(self.game.board):
+            return
+        current_player = ttt.player(self.game.board)
+
         play_x_button = pygame.Rect(self.game.width // 4 - 100, self.game.height // 2, 200, 50)
         play_o_button = pygame.Rect(3 * self.game.width // 4 - 100, self.game.height // 2, 200, 50)
 
-        if self.game.game_mode == "AI":
+        if self.game.game_mode == "AI" and current_player != self.game.user:
             if play_x_button.collidepoint(mouse_pos):
                 self.game.user = ttt.X
                 self.game.current_players["X"] = 'Player'
                 self.game.current_players["O"] = 'Computer'
                 self.game.state = GameState.GAME
+                self.game.ai_turn = False
                 time.sleep(0.2)
             elif play_o_button.collidepoint(mouse_pos):
                 self.game.user = ttt.O
                 self.game.current_players["X"] = "Computer"
                 self.game.current_players["O"] = "Player"
                 self.game.state = GameState.GAME
+                self.game.ai_turn = False
                 time.sleep(0.2)
 
 
@@ -676,7 +688,6 @@ class TicTacToeGame:
         """Main game loop"""
         while True:
             self.event_handler.handle_events()
-            #self.update()
             self.renderer.render()
             pygame.display.flip()
 
