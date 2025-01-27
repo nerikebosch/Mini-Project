@@ -133,6 +133,7 @@ def winner(board):
         if (board[2][0] == board[1][1] == board[0][2]) and board[2][0] is not EMPTY:
             return board[2][0]
         return None
+
     return checkin(board) or checkin(transpose(board))
 
 
@@ -247,8 +248,8 @@ def min_val(board, alpha, beta):
     
     Args:
         board (list): The current game board state.
-        mx (float): Alpha value for alpha-beta pruning.
-        mn (float): Beta value for alpha-beta pruning.
+        alpha (float): Alpha value for alpha-beta pruning.
+        beta (float): Beta value for alpha-beta pruning.
         
     Returns:
         list: A list containing [best_value, best_action], where best_value is the minimax
