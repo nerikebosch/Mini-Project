@@ -7,6 +7,9 @@ management and an AI player that makes optimal moves using the minimax algorithm
 alpha-beta pruning. The game board is represented as a 3x3 list of lists, where each cell 
 contains either 'X', 'O', or None (empty).
 
+https://www.geeksforgeeks.org/minimax-algorithm-in-game-theory-set-1-introduction/
+https://papers-100-lines.medium.com/the-minimax-algorithm-and-alpha-beta-pruning-tutorial-in-30-lines-of-python-code-e4a3d97fa144
+
 Global Constants:
     X (str): Represents the X player
     O (str): Represents the O player
@@ -130,7 +133,7 @@ def winner(board):
         if (board[2][0] == board[1][1] == board[0][2]) and board[2][0] is not EMPTY:
             return board[2][0]
         return None
-    return (checkin(board) or checkin(transpose(board)))
+    return checkin(board) or checkin(transpose(board))
 
 
 def terminal(board):
@@ -192,18 +195,27 @@ def minimax(board):
     
     mx = float('-inf')
     mn = float('inf')
-    
+
+    # Check if there's a winning move available for the board
+    for act in actions(board):
+        result_board = result(board, act)
+        if terminal(result_board) and winner(result_board) == player(board):
+            return act
+
     if player(board) == X:
         return max_val(board, mx, mn)[1]
     else:
-        return min_val(board, mx, mn)[1]   
+        return min_val(board, mx, mn)[1]
 
-def max_val(board, mx, mn):
+
+def max_val(board, alpha, beta):
     """
+    Function for minimax that handles maximizing player's turns.
+
     Args:
         board (list): The current game board state.
-        mx (float): Alpha value for alpha-beta pruning.
-        mn (float): Beta value for alpha-beta pruning.
+        alpha (float): Alpha value for alpha-beta pruning.
+        beta (float): Beta value for alpha-beta pruning.
         
     Returns:
         list: A list containing [best_value, best_action], where best_value is the minimax
@@ -216,19 +228,20 @@ def max_val(board, mx, mn):
     best_act = None
     
     for act in actions(board):
-        mini_val = min_val(result(board, act), mx, mn)[0]
-        mx = max(mx, mini_val)
-            
-        if mini_val > best_val:
-            best_val = mini_val
+        # Get value / simulate from minimizer's turn
+        val = min_val(result(board, act), alpha, beta)[0]
+        alpha = max(alpha, val)
+
+        if val > best_val:
+            best_val = val
             best_act = act
-            
-        if mx >= mn:
+
+        if alpha >= beta:
             break
-        
+
     return [best_val, best_act]
 
-def min_val(board, mx, mn):
+def min_val(board, alpha, beta):
     """
     Helper function for minimax that handles minimizing player's turns.
     
@@ -246,14 +259,17 @@ def min_val(board, mx, mn):
         
     best_val = float('inf')
     best_act = None
+
     for act in actions(board):
-        maxi_val = max_val(result(board, act), mx, mn)[0]
-        mn = min(mn, maxi_val)
+
+        val = max_val(result(board, act), alpha, beta)[0]
+        beta = min(beta, val)
             
-        if maxi_val < best_val:
-            best_val = maxi_val
+        if val < best_val:
+            best_val = val
             best_act = act
-        if mx >= mn:
+
+        if alpha >= beta:
             break
-    
+
     return [best_val, best_act]

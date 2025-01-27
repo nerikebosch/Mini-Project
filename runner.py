@@ -464,8 +464,8 @@ class Renderer:
         theme = self.theme_manager.get_theme()
 
         if self.game.game_mode == "AI":
-            print("DEBUG: Rendering AI player selection screen")
-            print(f"DEBUG: Game state: {self.game.state}")
+            #print("DEBUG: Rendering AI player selection screen")
+            #print(f"DEBUG: Game state: {self.game.state}")
             title = self.fonts.largeFont.render("Choose Your Side", True, theme["font_color"])
             title_rect = title.get_rect(center=(self.game.width // 2, 50))
             self.screen.blit(title, title_rect)
@@ -504,7 +504,6 @@ class Renderer:
     def render_game(self):
         """Renders the game board, player moves, and status messages."""
 
-        print(f"render_game: {self.game.user}")
         theme = self.theme_manager.get_theme()  # Load the current theme colors
         grid_color = theme["grid_color"]
         x_color = theme["x_color"]
@@ -549,14 +548,14 @@ class Renderer:
                 else:
                     status = f"Your Turn"
 
-
             status_text = self.fonts.largeFont.render(status, True, theme["font_color"])
             status_rect = status_text.get_rect()
             status_rect.center = (self.game.width // 2, 30)
             self.screen.blit(status_text, status_rect)
+            time.sleep(0.2)
 
         if self.game.state == GameState.GAME:
-            if self.game.game_mode == "AI" and not self.game.user == ttt.player(self.game.board) and not ttt.terminal(self.game.board):
+            if self.game.game_mode == "AI" and not self.game.user == ttt.player(self.game.board):
                 if self.game.ai_turn:
                     time.sleep(0.2)
                     move = ttt.minimax(self.game.board)
@@ -571,10 +570,7 @@ class Renderer:
         """Renders the game over screen with results and leaderboard."""
 
         theme = self.theme_manager.get_theme()
-        print("Rendering game over...")
         self.render_game()  # Show final board state
-
-        print("Print game result message: ")
         message = self.game.event_handler.handle_game_result()
         message_text = self.fonts.largeFont.render(message, True, theme["font_color"])
         message_rect = message_text.get_rect()
