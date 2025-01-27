@@ -18,9 +18,9 @@
         "button_text_color": [0, 255, 0]
     },
     "Pastel": {
-        "background": [245, 245, 220],
+        "background": [245, 215, 220],
         "grid_color": [120, 120, 120],
-        "x_color": [255, 182, 193],
+        "x_color": [255, 172, 183],
         "o_color": [173, 216, 230],
         "font_color": [105, 105, 105],
         "button_color": [255, 239, 213],

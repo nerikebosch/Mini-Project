@@ -353,7 +353,6 @@ class Renderer:
         self.screen.fill(theme["background"])  # Use theme background color
 
         if self.game.state == GameState.MENU:
-            print(f"render: game.state MENU")
             self.render_menu()
         elif self.game.state == GameState.PLAYER_SELECTION:
             self.render_player_selection()
@@ -421,9 +420,9 @@ class Renderer:
         self.screen.blit(title, title_rect)
 
         # Draw buttons
-        self.draw_button("vs AI", (self.game.width // 4, self.game.height // 2))
-        self.draw_button("2 Players", (3 * self.game.width // 4, self.game.height // 2))
-        self.draw_button("Settings", (self.game.width // 4, self.game.height // 6))
+        self.draw_button("vs AI", (2*self.game.width // 4, self.game.height // 3))
+        self.draw_button("2 Players", (2*self.game.width // 4, self.game.height // 2))
+        self.draw_button("Settings", (2*self.game.width // 4, self.game.height // 1.5))
 
 
     def render_settings(self):
@@ -471,8 +470,9 @@ class Renderer:
             title_rect = title.get_rect(center=(self.game.width // 2, 50))
             self.screen.blit(title, title_rect)
 
-            self.draw_button("Play as X", (self.game.width // 4, self.game.height // 2))
-            self.draw_button("Play as O", (3 * self.game.width // 4, self.game.height // 2))
+            self.draw_button("Play as X", (2* self.game.width // 4, self.game.height // 3))
+            self.draw_button("Play as O", (2* self.game.width // 4, self.game.height // 2))
+            self.draw_button("Back", (2* self.game.width // 4, self.game.height // 1.5))
 
         else: # 2P
             print("Render_player_selection 2P - Enter Player Names")
@@ -494,9 +494,11 @@ class Renderer:
                 text_surface = self.fonts.mediumFont.render(self.game.input_texts[box_name], True, theme["font_color"])
                 self.screen.blit(text_surface, (box.x + 5, box.y + 5))
 
-            self.draw_button("Start Game", (self.game.width // 3, self.game.height * 3 // 4))
+            self.draw_button("Start Game", (self.game.width // 5.2, self.game.height * 3 // 4))
             # Draw scores button to see the top rankings
-            self.draw_button("Scores", (self.game.width // 1.5, self.game.height * 3 // 4))
+            self.draw_button("Scores", (self.game.width // 2, self.game.height * 3 // 4))
+
+            self.draw_button("Back", (self.game.width // 1.25, self.game.height * 3 // 4))
 
 
     def render_game(self):
@@ -781,9 +783,9 @@ class EventHandler:
             play vs another player, or enter the settings menu.
         """
 
-        vs_ai_button = pygame.Rect(self.game.width // 4 - 100, self.game.height // 2, 200, 50)
-        vs_player_button = pygame.Rect(3 * self.game.width // 4 - 100, self.game.height // 2, 200, 50)
-        settings_button = pygame.Rect(self.game.width // 4 - 100, self.game.height // 6, 200, 50)
+        vs_ai_button = pygame.Rect(2*self.game.width // 4 - 100, self.game.height // 3, 200, 50)
+        vs_player_button = pygame.Rect(2 * self.game.width // 4 - 100, self.game.height // 2, 200, 50)
+        settings_button = pygame.Rect(2*self.game.width // 4 - 100, self.game.height // 1.5, 200, 50)
 
         if vs_ai_button.collidepoint(mouse_pos):
             self.game.board = ttt.initial_state()
@@ -817,8 +819,12 @@ class EventHandler:
             return
         current_player = ttt.player(self.game.board)
 
-        play_x_button = pygame.Rect(self.game.width // 4 - 100, self.game.height // 2, 200, 50)
-        play_o_button = pygame.Rect(3 * self.game.width // 4 - 100, self.game.height // 2, 200, 50)
+        play_x_button = pygame.Rect(2* self.game.width // 4 - 100, self.game.height // 3, 200, 50)
+        play_o_button = pygame.Rect(2 * self.game.width // 4 - 100, self.game.height // 2, 200, 50)
+        back_button = pygame.Rect(2* self.game.width // 4 - 100, self.game.height // 1.5, 200, 50)
+        if back_button.collidepoint(mouse_pos):
+            self.game.state = GameState.MENU
+            time.sleep(0.2)
 
         if self.game.game_mode == "AI" and current_player != self.game.user:
             if play_x_button.collidepoint(mouse_pos):
@@ -839,14 +845,19 @@ class EventHandler:
 
         elif self.game.game_mode == "2P":
 
+            back_button = pygame.Rect(self.game.width // 1.25 - 100, self.game.height * 3 // 4, 200, 50)
+            if back_button.collidepoint(mouse_pos):
+                self.game.state = GameState.MENU
+                time.sleep(0.2)
+
             # Check if scores button is clicked
-            scores_button = pygame.Rect(self.game.width // 1.5 - 100, self.game.height * 3 // 4, 200, 50)
+            scores_button = pygame.Rect(self.game.width // 2 - 100, self.game.height * 3 // 4, 200, 50)
             if scores_button.collidepoint(mouse_pos):
                 self.game.state = GameState.SCORES
                 time.sleep(0.2)
 
             # Check if start button is clicked
-            start_button = pygame.Rect(self.game.width // 3 - 100, self.game.height * 3 // 4, 200, 50)
+            start_button = pygame.Rect(self.game.width // 5.2 - 100, self.game.height * 3 // 4, 200, 50)
             if start_button.collidepoint(mouse_pos):
                 if self.game.input_texts["player1"] and self.game.input_texts["player2"]:
 
