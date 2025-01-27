@@ -860,13 +860,13 @@ class EventHandler:
                     player1 = self.game.input_texts["player1"]
                     player2 = self.game.input_texts["player2"]
                     if player1 == player2:
-                        message = "Player's name are duplicated!!"
+                        message = "Player's names are duplicated!!"
                         msg_surface = self.fonts.mediumFont.render(message, True, Colors.RED)
                         msg_rect = msg_surface.get_rect(center=(self.game.width // 2, self.game.height // 2 + 60 ))
                         self.game.screen.blit(msg_surface, msg_rect)
                         pygame.display.flip()  # Update the display to show the message
-                        time.sleep(1)  # Show the message for 1 second
-                    else: 
+                        time.sleep(1.5)  # Show the message for 1 second
+                    else:
                         self.game.current_players["X"] = self.game.input_texts["player1"]
                         self.game.current_players["O"] = self.game.input_texts["player2"]
                         self.game.state = GameState.GAME
